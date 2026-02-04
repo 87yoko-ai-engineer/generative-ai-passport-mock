@@ -83,5 +83,6 @@ This repository contains the full source code of the application.
 > <img width="1262" height="880" alt="image" src="https://github.com/user-attachments/assets/6cfe20f0-15b2-4873-8fb1-a1c29a3a40cc" />
 <img width="1111" height="774" alt="image" src="https://github.com/user-attachments/assets/fd35818e-fd40-4367-9a7e-07ef506ca021" />
 <img width="1168" height="794" alt="image" src="https://github.com/user-attachments/assets/dbbf6df5-ba86-4a5c-b20f-ce1316fdb9ab" />
+<img width="1037" height="621" alt="image" src="https://github.com/user-attachments/assets/5960185a-b44b-4cb1-863d-7481bff75f21" />
 
 
