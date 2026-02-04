@@ -7,16 +7,31 @@ import { ExamSession } from './components/ExamSession';
 import { ResultView } from './components/ResultView';
 import { generateQuestionsFromSyllabus, generateSimilarQuestion } from './services/geminiService';
 
-const STORAGE_KEY = 'genai_passport_app_v3';
+const STORAGE_KEY = 'genai_passport_app_v4';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>(TabType.SYLLABUS);
   const [appState, setAppState] = useState<AppState>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Handle migration from old versions
+        return {
+          questions: parsed.questions || [],
+          activeWrongQuestionIds: parsed.activeWrongQuestionIds || parsed.wrongQuestionIds || [],
+          mistakeHistoryIds: parsed.mistakeHistoryIds || parsed.wrongQuestionIds || [],
+          examHistory: parsed.examHistory || [],
+          difficulty: parsed.difficulty || Difficulty.NORMAL
+        };
+      } catch (e) {
+        console.error("Failed to parse storage", e);
+      }
+    }
     return {
       questions: [],
-      wrongQuestionIds: [],
+      activeWrongQuestionIds: [],
+      mistakeHistoryIds: [],
       examHistory: [],
       difficulty: Difficulty.NORMAL
     };
@@ -99,31 +114,43 @@ const App: React.FC = () => {
   };
 
   const startReviewWrong = () => {
-    const wrongQs = appState.questions.filter(q => appState.wrongQuestionIds.includes(q.id));
+    const wrongQs = appState.questions.filter(q => appState.activeWrongQuestionIds.includes(q.id));
     if (wrongQs.length === 0) {
-      alert('間違えた問題はありません。');
+      alert('現在間違えている問題はありません。');
       return;
     }
     setCurrentSession({
-      title: "復習（間違えた問題）",
+      title: "復習（現在間違えている問題）",
       questions: wrongQs.sort(() => Math.random() - 0.5),
       isMock: false
     });
   };
 
   const startReviewSimilar = async () => {
-    const wrongQs = appState.questions.filter(q => appState.wrongQuestionIds.includes(q.id));
-    if (wrongQs.length === 0) {
-      alert('間違えた問題はありません。');
+    // Priority 1: Current active mistakes
+    // Priority 2: Mistake history (all time)
+    let poolIds = appState.activeWrongQuestionIds.length > 0 
+      ? appState.activeWrongQuestionIds 
+      : appState.mistakeHistoryIds;
+
+    if (poolIds.length === 0) {
+      alert('類題を作る元データがありません。まず問題に回答して間違いを記録してください。');
+      return;
+    }
+
+    const poolQs = appState.questions.filter(q => poolIds.includes(q.id));
+    if (poolQs.length === 0) {
+      alert('問題データの取得に失敗しました。');
       return;
     }
 
     setIsGenerating(true);
     try {
       const similarQs: Question[] = [];
-      const sample = wrongQs.sort(() => Math.random() - 0.5).slice(0, 5);
+      // Use most recent N items if using history, or shuffle active
+      const sample = poolQs.sort(() => Math.random() - 0.5).slice(0, 5);
+      
       for (const q of sample) {
-        // Maintain the difficulty level of the original question or use current app setting
         const targetDifficulty = q.difficulty || appState.difficulty;
         const similar = await generateSimilarQuestion(
           q, 
@@ -139,11 +166,12 @@ const App: React.FC = () => {
       }));
       
       setCurrentSession({
-        title: "復習（AIによる類題）",
+        title: `復習（AIによる類題） [${DIFFICULTY_LABELS[appState.difficulty]}]`,
         questions: similarQs,
         isMock: false
       });
     } catch (e) {
+      console.error(e);
       alert('類題の生成に失敗しました。');
     } finally {
       setIsGenerating(false);
@@ -151,12 +179,16 @@ const App: React.FC = () => {
   };
 
   const handleExamComplete = (result: ExamResult) => {
-    const newWrongIds = new Set(appState.wrongQuestionIds);
+    const newActiveIds = new Set(appState.activeWrongQuestionIds);
+    const newHistoryIds = new Set(appState.mistakeHistoryIds);
+
     result.questions.forEach(q => {
       if (q.selectedIndex !== q.correctIndex) {
-        newWrongIds.add(q.id);
+        newActiveIds.add(q.id);
+        newHistoryIds.add(q.id);
       } else {
-        newWrongIds.delete(q.id);
+        newActiveIds.delete(q.id);
+        // Correct answers stay in history for similar question generation
       }
     });
 
@@ -164,7 +196,8 @@ const App: React.FC = () => {
 
     setAppState(prev => ({
       ...prev,
-      wrongQuestionIds: Array.from(newWrongIds),
+      activeWrongQuestionIds: Array.from(newActiveIds),
+      mistakeHistoryIds: Array.from(newHistoryIds),
       examHistory: [resultWithDiff, ...prev.examHistory]
     }));
     
@@ -307,9 +340,9 @@ const App: React.FC = () => {
                       onClick={startReviewWrong}
                       className="p-4 bg-orange-50 border border-orange-200 rounded-xl text-left hover:bg-orange-100 transition-colors"
                     >
-                      <div className="font-bold text-orange-800 mb-1">間違えた問題を解く</div>
+                      <div className="font-bold text-orange-800 mb-1">未達成の問題を解く</div>
                       <div className="text-xs text-orange-600">
-                        {appState.wrongQuestionIds.length}問が登録されています
+                        {appState.activeWrongQuestionIds.length}問が登録されています
                       </div>
                     </button>
                     <button
@@ -318,7 +351,9 @@ const App: React.FC = () => {
                     >
                       <div className="font-bold text-blue-800 mb-1">AIで類題を生成する</div>
                       <div className="text-xs text-blue-600">
-                        設定難易度で類似問題を新しく5問作成
+                        {appState.activeWrongQuestionIds.length > 0 
+                          ? `未達成の問題(${appState.activeWrongQuestionIds.length}問)から類題を5問生成`
+                          : `過去の間違い(${appState.mistakeHistoryIds.length}問)から類題を5問生成`}
                       </div>
                     </button>
                   </div>

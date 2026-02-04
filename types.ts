@@ -36,7 +36,8 @@ export interface ExamResult {
 
 export interface AppState {
   questions: Question[];
-  wrongQuestionIds: string[];
+  activeWrongQuestionIds: string[];
+  mistakeHistoryIds: string[];
   examHistory: ExamResult[];
   difficulty: Difficulty;
 }
