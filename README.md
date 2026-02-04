@@ -78,3 +78,6 @@ based on publicly available syllabus information.
 ## Repository
 
 This repository contains the full source code of the application.
+
+> Google AI Studioを活用して開発した、生成AIパスポート対策用の模擬試験Webアプリ。
+
