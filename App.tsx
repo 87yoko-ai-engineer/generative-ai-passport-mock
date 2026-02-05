@@ -1,3 +1,40 @@
+const DAILY_LIMIT = 30;
+const QUOTA_KEY = 'genai_quota_v1';
+
+const isGenerationEnabled = () => {
+  return (import.meta as any).env?.VITE_GENERATION_ENABLED === 'true';
+};
+
+const todayStr = () => new Date().toISOString().slice(0, 10);
+
+const canConsume = () => {
+  const raw = localStorage.getItem(QUOTA_KEY);
+  const data = raw ? JSON.parse(raw) : { day: todayStr(), count: 0 };
+
+  // 日付が変わったらリセット
+  if (data.day !== todayStr()) {
+    data.day = todayStr();
+    data.count = 0;
+  }
+
+  // 環境変数でOFFなら不可
+  if (!isGenerationEnabled()) {
+    return { ok: false, reason: '現在、問題生成は停止中です（管理者設定）。' };
+  }
+
+  // 上限超えなら不可
+  if (data.count >= DAILY_LIMIT) {
+    return { ok: false, reason: `本日の生成上限（${DAILY_LIMIT}回）に達しました。` };
+  }
+
+  return { ok: true, data };
+};
+
+const consumeOnce = (data: { day: string; count: number }) => {
+  data.count += 1;
+  localStorage.setItem(QUOTA_KEY, JSON.stringify(data));
+};
+
 
 import React, { useState, useEffect } from 'react';
 import { TabType, Question, ExamResult, AppState, Difficulty } from './types';
