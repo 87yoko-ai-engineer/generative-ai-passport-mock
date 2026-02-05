@@ -1,6 +1,6 @@
 ## 🔗 デモURL（Vercel）
 
-https://generative-ai-passport-mock.vercel.app/　
+https://generative-ai-passport-mock.vercel.app/
 
 - ログイン不要
 - PC / スマートフォン対応
