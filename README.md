@@ -5,6 +5,8 @@ https://generative-ai-passport-mock.vercel.app/
 - ログイン不要
 - PC / スマートフォン対応
 - Google AI Studio + React + Vercel で構築
+- ※ 公開時のコスト安全性を考慮し、
+生成AIによる問題生成は制限付きで設計しています。
 
 
 
