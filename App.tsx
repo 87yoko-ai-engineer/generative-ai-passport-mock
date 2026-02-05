@@ -93,8 +93,11 @@ const App: React.FC = () => {
   };
 
   const startChapterExam = async (chapter: number) => {
+        const chk = canConsume();
+    if (!chk.ok) { alert(chk.reason); return; }
     setIsGenerating(true);
     try {
+            consumeOnce(chk.data);
       const qs = await generateQuestionsFromSyllabus(
         chapter, 
         CHAPTER_METADATA[chapter].syllabus, 
@@ -122,6 +125,10 @@ const App: React.FC = () => {
     try {
       const allMockQuestions: Question[] = [];
       for (const ch of CHAPTERS) {
+               const chk = canConsume();
+        if (!chk.ok) { alert(chk.reason); setIsGenerating(false); return; }
+        consumeOnce(chk.data);
+
         const count = MOCK_EXAM_DISTRIBUTION[ch];
         const qs = await generateQuestionsFromSyllabus(
           ch, 
