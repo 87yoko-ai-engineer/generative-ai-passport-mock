@@ -48,4 +48,6 @@ View your app in AI Studio: https://ai.studio/apps/drive/1Eh6Tahkj_HwPzHTQx00hGt
    `npm run dev`
 
    <img width="1159" height="789" alt="image" src="https://github.com/user-attachments/assets/1cd91d55-c98e-4e2f-87f5-a7e4659226f8" />
+   <img width="1103" height="767" alt="image" src="https://github.com/user-attachments/assets/9c20683d-95cf-44d0-940b-b1697832376b" />
+
 
